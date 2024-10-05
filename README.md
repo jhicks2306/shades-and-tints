@@ -1,19 +1,7 @@
-# Framer Plugin Template
+# Shades and Tints
 
-This is a template for using the Framer Plugin API in a TypeScript project.
+Easily generate shades and tints then add them to the canvas.
 
-## Quickstart
+**By**: @jhicks2306
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Learn more: https://www.framer.com/developers/plugins/introduction
+![Shades and Tints Plugin](public/shades-and-tints-thumnail-1.png)
