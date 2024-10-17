@@ -6,8 +6,8 @@ import "./App.css"
 
 framer.showUI({
     position: "top right",
-    width: 240, 
-    height: 300,
+    width: 260, 
+    height: 345,
 })
 
 function useSelection() {
@@ -79,7 +79,7 @@ export function App() {
     }, [selection]);
     
     
-    const handleAdd = async () => {
+    const handleAddToCanvas = async () => {
         const { selectedColor, selectionAbsoluteXY, numberOfTints, numberOfShades, name } = state;
 
         // Calculate the total number of colors.
@@ -133,8 +133,39 @@ export function App() {
                 backgroundColor: `${tints[i]}`,
             }, parent?.id);
         }
-    };   
+    };
 
+    const handleAddColorStyles = async () => {
+        const { selectedColor, numberOfTints, numberOfShades, name } = state;
+
+        // Calculate the total number of colors.
+        const totalColors = numberOfShades + 1 + numberOfTints; 
+
+        // Calculate the shades and tints. (We know selectedColor is string because button is enabled.)
+        const shades = calculateShades(selectedColor as string, numberOfShades)
+        const tints = calculateTints(selectedColor as string, numberOfTints)
+
+        for (let i = 0; i < numberOfShades; i++) {
+            await framer.createColorStyle({
+                name: `${name? name : "Unnamed"} ${totalColors - i}`,
+                light: `${shades[i]}`,
+            })
+        }
+
+        await framer.createColorStyle({
+            name: `${name? name : "Unnamed"} ${totalColors - numberOfShades} (Base)`,
+            light: selectedColor as string,
+        })
+
+        for (let i = 0; i < numberOfTints; i++) {
+            await framer.createColorStyle({
+                name: `${name? name : "Unnamed"} ${numberOfTints - i}`,
+                light: `${tints[i]}`,
+            })
+        }
+
+
+    }
 
     return (
         <main>
@@ -181,7 +212,13 @@ export function App() {
             </Row>
             <button
                 className="framer-button-primary"
-                onClick={handleAdd}
+                onClick={handleAddColorStyles}
+                disabled={!state.selectedColor}>
+                Add Color Styles
+            </button>
+            <button
+                className="framer-button-secondary"
+                onClick={handleAddToCanvas}
                 disabled={!state.selectedColor}>
                 Add to Canvas
             </button>
