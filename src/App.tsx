@@ -40,6 +40,7 @@ type AppState = {
     selectionAbsoluteXY: SelectionPosition | null;
     numberOfTints: number;
     numberOfShades: number;
+    colorPalette: string[] | null;
     name: string | null;
 }
 
@@ -48,6 +49,7 @@ export function App() {
     const [state, setState] = useState<AppState>({
         selectedColor: null,
         selectionAbsoluteXY: null,
+        colorPalette: null,
         numberOfTints: 4,
         numberOfShades: 4,
         name: null,
@@ -77,6 +79,34 @@ export function App() {
 
         fetchLocation()
     }, [selection]);
+
+    useEffect(() => {
+        const { selectedColor, numberOfTints, numberOfShades } = state;
+        console.log("color", state.selectedColor)
+        console.log("no. of shades", state.numberOfShades)
+        console.log("no. of tints", state.numberOfTints)
+
+        // Calculate the shades and tints. (We know selectedColor is string because button is enabled.)
+        const shades = calculateShades(selectedColor as string, numberOfShades)
+        const tints = calculateTints(selectedColor as string, numberOfTints)
+
+        // Update the color palette of a string is selected.
+        if (selectedColor) {
+            const colorPalette: string[] = [...shades, selectedColor, ...tints]
+
+            setState(prev => ({
+                ...prev,
+                colorPalette: colorPalette,
+            }))
+        } else {
+            setState(prev => ({
+                ...prev,
+                colorPalette: null,
+            }))
+        }
+
+
+    }, [state.selectedColor, state.numberOfShades, state.numberOfTints])
     
     
     const handleAddToCanvas = async () => {
@@ -170,17 +200,32 @@ export function App() {
     return (
         <main>
             <p>
-                Effortlessly add Shades and Tints to the Canvas.
+                Effortlessly generate Shades and Tints. Add to Color Styles or the Canvas.
             </p>
             <div className="framer-divider"></div>
             <div 
                 className="color-display"
                 style={{ backgroundColor: state.selectedColor || "var(--framer-color-bg-tertiary)"}}>
                     {!state.selectedColor &&
-                    <p style={{
-                        textAlign: "center",
-                        textWrap: "balance"
-                        }}>Select a layer on the Canvas with a background fill</p>}
+                        <p style={{
+                            textAlign: "center",
+                            textWrap: "balance"
+                            }}>Select a layer on the Canvas with a background fill
+                        </p>
+                    }
+                    {state.colorPalette && 
+                     state.colorPalette.map((color, index) =>
+                        <div
+                            key={index}
+                            style={{
+                                flexGrow: 1,
+                                height: '100%',
+                                backgroundColor: color,
+                            }}
+                        >
+                        </div>
+                     )}
+                    
                 </div>
             <Row title={"Shades"}>
                 <Stepper
@@ -211,16 +256,16 @@ export function App() {
                 />
             </Row>
             <button
-                className="framer-button-primary"
-                onClick={handleAddColorStyles}
-                disabled={!state.selectedColor}>
-                Add Color Styles
-            </button>
-            <button
                 className="framer-button-secondary"
                 onClick={handleAddToCanvas}
                 disabled={!state.selectedColor}>
                 Add to Canvas
+            </button>
+            <button
+                className="framer-button-primary"
+                onClick={handleAddColorStyles}
+                disabled={!state.selectedColor}>
+                Add Color Styles
             </button>
         </main>
     )
