@@ -82,47 +82,40 @@ export function App() {
 
     useEffect(() => {
         const { selectedColor, numberOfTints, numberOfShades } = state;
-        console.log("color", state.selectedColor)
-        console.log("no. of shades", state.numberOfShades)
-        console.log("no. of tints", state.numberOfTints)
-
-        // Calculate the shades and tints. (We know selectedColor is string because button is enabled.)
-        const shades = calculateShades(selectedColor as string, numberOfShades)
-        const tints = calculateTints(selectedColor as string, numberOfTints)
-
-        // Update the color palette of a string is selected.
+        
         if (selectedColor) {
+            // Then selected color is a string. Calculate the shades and tints.
+            const shades = calculateShades(selectedColor as string, numberOfShades)
+            const tints = calculateTints(selectedColor as string, numberOfTints)
+
+            
+            // Create and set the active color palette.
             const colorPalette: string[] = [...shades, selectedColor, ...tints]
 
             setState(prev => ({
-                ...prev,
-                colorPalette: colorPalette,
-            }))
-        } else {
-            setState(prev => ({
-                ...prev,
-                colorPalette: null,
-            }))
-        }
-
+                    ...prev,
+                    colorPalette: colorPalette,
+                }))
+            } else {
+                setState(prev => ({
+                    ...prev,
+                    colorPalette: null,
+                }))
+            }
 
     }, [state.selectedColor, state.numberOfShades, state.numberOfTints])
     
     
     const handleAddToCanvas = async () => {
-        const { selectedColor, selectionAbsoluteXY, numberOfTints, numberOfShades, name } = state;
+        const { selectedColor, selectionAbsoluteXY, numberOfShades, colorPalette, name } = state;
 
-        // Calculate the total number of colors.
-        const totalColors = numberOfShades + 1 + numberOfTints; 
-
-        // Calculate the shades and tints. (We know selectedColor is string because button is enabled.)
-        const shades = calculateShades(selectedColor as string, numberOfShades)
-        const tints = calculateTints(selectedColor as string, numberOfTints)
-    
+        // Confirm color palette available.
+        if(!colorPalette) { return }
+  
         // Create the parent FrameNode with height based on the total colors
         const parent = await framer.createFrameNode({
             name: `${name? name : "Unnamed"} - Shades and Tints`,
-            height: `${totalColors * 100}px`,            
+            height: `${colorPalette.length * 100}px`,            
             width: `100px`,
             left: `${selectionAbsoluteXY? selectionAbsoluteXY.x : 0}px`,
             top: `${selectionAbsoluteXY? selectionAbsoluteXY.y + 150 : 0}px`,
@@ -131,19 +124,19 @@ export function App() {
         // Create FrameNode for each shade
         for (let i = 0; i < numberOfShades; i++) {
             await framer.createFrameNode({
-                name: `${name? name : "Unnamed"} ${totalColors - i}`,
+                name: `${name? name : "Unnamed"} ${colorPalette.length - i}`,
                 height: "100px",
                 width: "100px",
                 position: "absolute",
                 top: `${i * 100}px`,
-                backgroundColor: `${shades[i]}`,
+                backgroundColor: `${colorPalette[i]}`,
             }, parent?.id);
         }
     
-        // Create FrameNodes for the selected color
+        // Create FrameNode for the selected color
         if (selectedColor) {
             await framer.createFrameNode({
-                name: `${name? name : "Unnamed"} ${totalColors - numberOfShades} (Base)`,
+                name: `${name? name : "Unnamed"} ${colorPalette.length - numberOfShades} (Base)`,
                 height: "100px",
                 width: "100px",
                 position: "absolute",
@@ -152,55 +145,52 @@ export function App() {
             }, parent?.id);
         }
     
-        // Create frame nodes for each tint
-        for (let i = 0; i < numberOfTints; i++) {
+        // Create FrameNodes for each tint
+        for (let i = numberOfShades + 1; i < colorPalette.length; i++) {
             await framer.createFrameNode({
-                name: `${name? name : "Unnamed"} ${numberOfTints - i}`,
+                name: `${name? name : "Unnamed"} ${colorPalette.length - i}`,
                 height: "100px",
                 width: "100px",
                 position: "absolute",
-                top: `${(numberOfShades + 1 + i) * 100}px`, // Position after selected color
-                backgroundColor: `${tints[i]}`,
+                top: `${i * 100}px`, // Position after selected color
+                backgroundColor: `${colorPalette[i]}`,
             }, parent?.id);
         }
     };
 
     const handleAddColorStyles = async () => {
-        const { selectedColor, numberOfTints, numberOfShades, name } = state;
+        const { selectedColor, numberOfShades, colorPalette, name } = state;
 
-        // Calculate the total number of colors.
-        const totalColors = numberOfShades + 1 + numberOfTints; 
+        // Confirm color palette available.
+        if(!colorPalette) { return }
 
-        // Calculate the shades and tints. (We know selectedColor is string because button is enabled.)
-        const shades = calculateShades(selectedColor as string, numberOfShades)
-        const tints = calculateTints(selectedColor as string, numberOfTints)
-
+        // Add Color Styles for the shades.
         for (let i = 0; i < numberOfShades; i++) {
             await framer.createColorStyle({
-                name: `${name? name : "Unnamed"} ${totalColors - i}`,
-                light: `${shades[i]}`,
+                name: `${name? name : "Unnamed"} ${colorPalette.length - i}`,
+                light: `${colorPalette[i]}`,
             })
         }
-
+        
+        // Add Color Style for the selected color.
         await framer.createColorStyle({
-            name: `${name? name : "Unnamed"} ${totalColors - numberOfShades} (Base)`,
+            name: `${name? name : "Unnamed"} ${colorPalette.length - numberOfShades} (Base)`,
             light: selectedColor as string,
         })
 
-        for (let i = 0; i < numberOfTints; i++) {
+        // Add Color Styles for the tints.
+        for (let i = numberOfShades + 1; i < colorPalette.length; i++) {
             await framer.createColorStyle({
-                name: `${name? name : "Unnamed"} ${numberOfTints - i}`,
-                light: `${tints[i]}`,
+                name: `${name? name : "Unnamed"} ${colorPalette.length - i}`,
+                light: `${colorPalette[i]}`,
             })
         }
-
-
     }
 
     return (
         <main>
             <p>
-                Effortlessly generate Shades and Tints. Add to Color Styles or the Canvas.
+                Effortlessly generate Shades and Tints. Then add to Color Styles or the Canvas.
             </p>
             <div className="framer-divider"></div>
             <div 
@@ -226,7 +216,7 @@ export function App() {
                         </div>
                      )}
                     
-                </div>
+            </div>
             <Row title={"Shades"}>
                 <Stepper
                     value={state.numberOfShades}
@@ -265,7 +255,7 @@ export function App() {
                 className="framer-button-primary"
                 onClick={handleAddColorStyles}
                 disabled={!state.selectedColor}>
-                Add Color Styles
+                Add to Color Styles
             </button>
         </main>
     )

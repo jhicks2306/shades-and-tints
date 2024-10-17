@@ -36,4 +36,5 @@ main {
     border-style: solid;
     border-color: var(--framer-color-bg-tertiary);
     border-width: 1px;
+    overflow: hidden;
 }
