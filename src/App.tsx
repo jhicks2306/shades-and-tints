@@ -1,4 +1,4 @@
-import { framer, CanvasNode, supportsBackgroundColor } from "framer-plugin"
+import { framer, CanvasNode, supportsBackgroundColor, ColorStyle } from "framer-plugin"
 import { useState, useEffect } from "react"
 import { Stepper } from "./Stepper"
 import { calculateShades, calculateTints, getAbsolutePosition } from "./utilities"
@@ -41,6 +41,7 @@ type AppState = {
     numberOfTints: number;
     numberOfShades: number;
     colorPalette: string[] | null;
+    recentlyAdded: ColorStyle[] | null;
     name: string | null;
 }
 
@@ -50,6 +51,7 @@ export function App() {
         selectedColor: null,
         selectionAbsoluteXY: null,
         colorPalette: null,
+        recentlyAdded: null,
         numberOfTints: 4,
         numberOfShades: 4,
         name: null,
@@ -160,32 +162,74 @@ export function App() {
 
     const handleAddColorStyles = async () => {
         const { selectedColor, numberOfShades, colorPalette, name } = state;
+        const newColorStyles: ColorStyle[] = []
 
         // Confirm color palette available.
-        if(!colorPalette) { return }
+        if(!colorPalette) { 
+            console.error("No color palette identified")
+            framer.notify("No active color found. Please select a layer with a background fill.", {
+                durationMs: 3000,
+                variant: "error",
+            })
+            return }
 
-        // Add Color Styles for the shades.
-        for (let i = 0; i < numberOfShades; i++) {
-            await framer.createColorStyle({
-                name: `${name? name : "Unnamed"} ${colorPalette.length - i}`,
-                light: `${colorPalette[i]}`,
+        try {
+
+            // Add Color Styles for the shades.
+            for (let i = 0; i < numberOfShades; i++) {
+               const newColorStyle =  await framer.createColorStyle({
+                    name: `${name? name : "Unnamed"} ${colorPalette.length - i}`,
+                    light: `${colorPalette[i]}`,
+                })
+                
+                newColorStyles.push(newColorStyle)
+            }
+            
+            // Add Color Style for the selected color.
+            const newColorStyle =  await framer.createColorStyle({
+                name: `${name? name : "Unnamed"} ${colorPalette.length - numberOfShades} (Base)`,
+                light: selectedColor as string,
+            })
+            newColorStyles.push(newColorStyle)
+            
+            // Add Color Styles for the tints.
+            for (let i = numberOfShades + 1; i < colorPalette.length; i++) {
+                const newColorStyle = await framer.createColorStyle({
+                    name: `${name? name : "Unnamed"} ${colorPalette.length - i}`,
+                    light: `${colorPalette[i]}`,
+                })
+                newColorStyles.push(newColorStyle)
+            }
+
+            // Update recently added color styles
+            setState(prev => ({
+                ...prev,
+                recentlyAdded: newColorStyles,
+            }))
+
+            // Use a closure to capture the updated color styles for undo
+            const handleUndoWithUpdatedStyles = () => {
+                newColorStyles.forEach(async (colorStyle) => {
+                    await colorStyle.remove();
+                });
+            };
+
+            // Notify user.
+            framer.notify("Color Styles added successfully", {
+                button: {text: "Undo", onClick: handleUndoWithUpdatedStyles },
+                durationMs: 5000,
+                variant: "info",
+
+            })
+        } catch(error) {
+            // Error handling
+            console.error("Error adding color styles:", error);
+            framer.notify("Failed to add color styles. Please try again.", {
+                durationMs: 3000,
+                variant: "error",
             })
         }
-        
-        // Add Color Style for the selected color.
-        await framer.createColorStyle({
-            name: `${name? name : "Unnamed"} ${colorPalette.length - numberOfShades} (Base)`,
-            light: selectedColor as string,
-        })
-
-        // Add Color Styles for the tints.
-        for (let i = numberOfShades + 1; i < colorPalette.length; i++) {
-            await framer.createColorStyle({
-                name: `${name? name : "Unnamed"} ${colorPalette.length - i}`,
-                light: `${colorPalette[i]}`,
-            })
-        }
-    }
+    } 
 
     return (
         <main>
@@ -199,7 +243,7 @@ export function App() {
                     {!state.selectedColor &&
                         <p style={{
                             textAlign: "center",
-                            textWrap: "balance"
+                            textWrap: "balance",
                             }}>Select a layer on the Canvas with a background fill
                         </p>
                     }
