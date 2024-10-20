@@ -212,6 +212,7 @@ export function App() {
                 newColorStyles.forEach(async (colorStyle) => {
                     await colorStyle.remove();
                 });
+                framer.notify("Generated Color Styles removed.")
             };
 
             // Notify user.
