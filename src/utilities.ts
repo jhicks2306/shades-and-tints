@@ -127,8 +127,14 @@ function hslToRgb(h: number, s: number, l: number, a: number = 1): string {
  */
 function extractRGBA(color: string | null ): [number, number, number, number] {
   
-  if (color == 'white') {
-    return [255, 255, 255, 1]
+  // Capture cases when white doesn't fit rbga format.
+  switch (color) {
+    case 'white':
+    case 'hsl(0, 0%, 100%)':
+      return [255, 255, 255, 1];
+  
+    default:
+      break;
   }
   
   const rgbaMatch = color?.match(/rgba?\s*\(\s*(\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d*\.?\d+))?\s*\)/);
